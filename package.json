@@ -1,0 +1,22 @@
+{
+  "name": "old-school-games",
+  "version": "0.0.1",
+  "description": "play old school games",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "whitedog44",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.0.1",
+    "express": "^4.18.1",
+    "jsonwebtoken": "^8.5.1",
+    "mysql2": "^2.3.3",
+    "path": "^0.12.7",
+    "sequelize": "^6.19.2",
+    "sequelize-cli": "^6.4.1",
+    "socket.io": "^4.5.1"
+  }
+}

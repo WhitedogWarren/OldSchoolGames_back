@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "Whitedog44",
+    "password": "Vegu+1459",
+    "database": "old_school_games",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "test": {
+    "username": "Whitedog44",
+    "password": "Vegu+1459",
+    "database": "old_school_games",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "Whitedog44",
+    "password": "Vegu+1459",
+    "database": "old_school_games",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  }
+}
