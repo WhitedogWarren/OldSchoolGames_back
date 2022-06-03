@@ -3,8 +3,6 @@ const app = express();
 const path = require('path');
 const mysql = require('mysql2');
 
-
-
 require('dotenv').config();
 
 //gestion du cors
@@ -14,7 +12,6 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     next();
 });
-
 
 //Permet la récupération des données POST ( req.body )
 app.use(express.json());
@@ -34,9 +31,7 @@ app.use('/images', express.static(path.join(__dirname, 'images')));
 
 const authRoute = require('./routes/auth');
 
-
 app.use('/api/auth', authRoute);
-
 
 // 404
 app.use('/', (req, res) => {

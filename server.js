@@ -52,4 +52,4 @@ server.on('listening', () => {
 
 server.listen(port);
 
-io.on('connection', ioUtils.socketHandler);
+io.on('connection', ioUtils.connectionHandler);
