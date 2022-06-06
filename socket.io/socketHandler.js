@@ -2,30 +2,42 @@ const { User } = require('../models');
 const jwt = require('jsonwebtoken');
 
 exports.connectionHandler = (socket) =>  {
-    //console.log('coucou from ws handler');
     socket.emit('connexion_acknowledgement')
-    socket.on('test', () => {
-        console.log('Test emmited');
-        socket.emit('message', 'hello from socket.io');
-    })
     socket.on('disconnect', reason => {
         if(socket.userName) {
-            socket.broadcast.emit('userLeft', socket.userName);
+            let data = {
+                pseudo: socket.userName,
+                userList: []
+            }
+            //socket.nsp.socket is the Map of every socket instance of io server
+            //here we add them to data.userList
+            socket.nsp.sockets.forEach((value, key, map) => {
+                data.userList.push(value.userName);
+            })
+                
+            socket.broadcast.emit('userLeft', JSON.stringify(data));
         }
+        //console.log(socket.nsp.sockets);
     })
     socket.on('setRoom', (token) => {
-        console.log(token);
-         const decodedToken = jwt.verify(token, process.env.TOKEN_SECRET);
+        const decodedToken = jwt.verify(token, process.env.TOKEN_SECRET);
         const userId = decodedToken.userId;
         User.findOne({where: { id: userId}})
         .then(user => {
             if(user) {
-                console.log(user.pseudo);
                 socket.userName = user.pseudo;
-                socket.emit('socketNamed', socket.userName);
-                //console.log(socket.nsp.sockets);
-                //socket.nsp.emit('newUser', 'un utilisateur se connecte');
-                socket.broadcast.emit('newUser', socket.userName);
+                let data = {
+                    pseudo: socket.userName,
+                    userList: []
+                }
+                //socket.nsp.socket is the Map of every socket instance of io server
+                //here we add them to data.userList
+                socket.nsp.sockets.forEach((value, key, map) => {
+                    data.userList.push(value.userName);
+                })
+                socket.emit('socketNamed', JSON.stringify(data));
+                
+                socket.broadcast.emit('newUser', JSON.stringify(data));
             }
         })
     })
