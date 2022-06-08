@@ -13,6 +13,16 @@ const User = sequelize.define('User', {
   password: {
     type: DataTypes.STRING,
     allowNull: false
+  },
+  invited: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: '[]'
+  },
+  invitedBy: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: '[]'
   }
 })
 

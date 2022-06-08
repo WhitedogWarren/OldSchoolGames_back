@@ -9,13 +9,23 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       pseudo: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       email: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       password: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      invited: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },invitedBy: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
       createdAt: {
         allowNull: false,
