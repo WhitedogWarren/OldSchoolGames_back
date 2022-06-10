@@ -133,5 +133,6 @@ exports.connectionHandler = (socket) =>  {
         console.log('setGame : ', `${host} invite ${socket.userName}`);
         
         morpionGameManager.morpionGameHandler(socket, host);
+        
     })
 }
