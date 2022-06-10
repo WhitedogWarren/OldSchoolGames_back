@@ -1,6 +1,7 @@
 const { User } = require('../models');
 const { Op } = require("sequelize");
 const jwt = require('jsonwebtoken');
+const morpionGameManager = require('./morpionGameHandler');
 
 exports.connectionHandler = (socket) =>  {
     //emit connexion aknowledgment to user
@@ -86,7 +87,6 @@ exports.connectionHandler = (socket) =>  {
         }
     })
     
-
     socket.on('invite', async (user) => {
         console.log(`${socket.userName} a invité ${user}`);
         socket.nsp.to(user).emit('invitedBy', socket.userName);
@@ -127,5 +127,11 @@ exports.connectionHandler = (socket) =>  {
             socket.nsp.to(socket.userName).emit('invitesList', JSON.stringify(values[0]));
             socket.nsp.to(user).emit('invitesList', JSON.stringify(values[1]));
         })
+    })
+
+    socket.on('setGame', host => {
+        console.log('setGame : ', `${host} invite ${socket.userName}`);
+        
+        morpionGameManager.morpionGameHandler(socket, host);
     })
 }
