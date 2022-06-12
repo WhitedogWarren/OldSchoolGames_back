@@ -39,7 +39,6 @@ exports.signup = (req, res) => {
     if(req.body.password !== '' && req.body.password_confirm !== '' && req.body.password !== req.body.password_confirm) {
         invalidFields ? invalidFields.push('password_mismatch') : invalidFields = ['password_mismatch'];
     }
-
     if(emptyFields || invalidFields) {
         return res.status(401).json({message: 'Formulaire invalide', user: null, token: null, emptyFields, invalidFields});
     }
@@ -52,8 +51,7 @@ exports.signup = (req, res) => {
             password: hash,
         })
         .then((user) => {
-            console.log('user créé');
-            console.log(user);
+            console.log('user créé\n', user);
             delete user.dataValues.password;
             delete user.dataValues.email;
             const token = jwt.sign(
@@ -64,22 +62,21 @@ exports.signup = (req, res) => {
             res.status(201).json({ message: 'utilisateur créé', user, token });
         })
         .catch(error => {
-            console.log('error in authCtrl.signup : ');
-            console.log(error);
+            console.log('error in authCtrl.signup : ', error);
             res.status(500).json({ message: 'erreur lors de la création du compte. Veuillez réessayer' });
         })
     })
     .catch(error => {
-        console.log('error in controllers/auth.js :');
-        console.log(error);
+        console.log('error in controllers/auth.js : ', error);
         res.status(500).json({ message: 'erreur lors de la création du compte. Veuillez réessayer' })
     });
-
-    //res.status(200).json({message: 'demande reçue'});
 }
 
 exports.login = (req, res) => {
     console.log(req.body);
+    //////
+    // TODO : contrôle des champs
+    //////
     User.findOne({where: { email: req.body.email}, attributes: ['id', 'pseudo', 'password']})
     .then(user => {
         if(!user) {
@@ -102,14 +99,12 @@ exports.login = (req, res) => {
             })
         })
         .catch(error => {
-            console.log('Error in authCtrl.login :');
-            console.log(error);
+            console.log('Error in authCtrl.login : ', error);
             return res.status(500).json({ message : 'Une erreur est survenue, veuillez réessayer' });
         })
     })
     .catch(error => {
-        console.log('Error in authCtrl.login :');
-        console.log(error);
+        console.log('Error in authCtrl.login : ', error);
         return res.status(500).json({ message : 'Une erreur est survenue, veuillez réessayer' });
     })
 }

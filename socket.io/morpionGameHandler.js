@@ -4,13 +4,18 @@ exports.morpionGameHandler = (socket, host) => {
     console.log(`${socket.userName} accepte l'invitation de ${host}`);
     const hostRoom = socket.nsp.to(host);
     const guestRoom = socket.nsp.to(socket.userName);
+    let hostSocket;
+    socket.nsp.sockets.forEach((value, key, map) => {
+        if(value.userName === host) {
+            hostSocket = value;
+        }
+    });
 
-    hostRoom.emit('morpionStarts', 'Partie lancée, vous êtes l\'hôte');
-    guestRoom.emit('morpionStarts', 'Partie lancée, vous êtes l\'invité');
+    console.log('host : ', hostSocket.userName);
+    hostRoom.emit('morpionStarts', {guest: socket.userName});
+    guestRoom.emit('morpionStarts', {host: host});
 
-    //////
-    // TODO: start the game
-    //////
+    // start the game
     if(!socket.nsp.morpionGames) {
         socket.nsp.morpionGames = morpionManager.games;
     }
@@ -21,23 +26,40 @@ exports.morpionGameHandler = (socket, host) => {
     //////
     
     //////
-    // TODO: add game related listeners ( V2 app.js line 195+)
+    // game related eventListeners
     //////
+
     //cellPlayed
-    socket.on('cellPlayed', (data) => { // jouer le coup
-        io.to(data.gameHost).emit('message', data.player + ' joue en ' + data.cellPlayed);
-        let returnOfPlay = morpionManager.games.get(data.gameHost).play(data.player, data.cellPlayed);
-        if(returnOfPlay.error)
-            console.log('returnOfPlay Error :' + returnOfPlay.error);
-        else{
-            console.log('Réponse : ' + returnOfPlay.message);
-            io.to(data.gameHost).emit('drawCell', {token: returnOfPlay.token, cell: returnOfPlay.cellToDraw, turn: morpionManager.games.get(data.gameHost).turn});
-            if(returnOfPlay.result){
-                console.log('result.draw : ' + returnOfPlay.result.draw + '\nresult.gagnant : ' + returnOfPlay.result.gagnant + '\nCases : ' + returnOfPlay.result.cells);
-                io.to(data.gameHost).emit('gameResult', returnOfPlay.result);
-            }
+    function cellPlayed(data)  {
+        console.log(data);
+        let game = socket.nsp.morpionGames.get(data.gameHost);
+        console.log(game.turn);
+        let playResponse = game.play(data.player, data.cellPlayed);
+        console.log(playResponse);
+        if(playResponse.error) {
+            
+            socket.nsp.to(data.player).emit('error', playResponse.message);
         }
-    });
+        else {
+            let responseData = {
+                message: `${data.player} joue en ${data.cellPlayed}`,
+                token: playResponse.token,
+                cellToDraw: playResponse.cellToDraw,
+                result: playResponse.result
+            }
+            hostRoom.emit('gameMessage', responseData);
+            guestRoom.emit('gameMessage', responseData);
+        }
+    }
+    //////
+    // TODO : check if there is a result and if so notify players
+    //////
+    socket.on('cellPlayed', data => cellPlayed(data));
+    hostSocket.on('cellPlayed', data => cellPlayed(data));
+    
+    //////
+    // TODO : control and correct these old handlers
+    //////
     //gameRelaod
     socket.on('gameReload', (data) => {
         console.log('reload ' + data.host + " from : " + data.from);
@@ -63,7 +85,9 @@ exports.morpionGameHandler = (socket, host) => {
     })
     //gameLeave
     socket.on('gameLeave', (data) => {
+        //////
+        // TODO : notify the other player and close the game
+        //////
         console.log('game left ! ' + data.user + ' quitte la partie de ' + data.gameHost);
     })
-
 }

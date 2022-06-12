@@ -30,8 +30,10 @@ dbConnexion.connect();
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
 const authRoute = require('./routes/auth');
+const userRoute = require('./routes/user');
 
 app.use('/api/auth', authRoute);
+app.use('/api/user', userRoute);
 
 // 404
 app.use('/', (req, res) => {
