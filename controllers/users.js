@@ -6,4 +6,7 @@ exports.getAuthStatus = (req, res) => {
         console.log(user);
         res.status(200).json(user);
     })
+    .catch(error => {
+        console.log('Error in usersCtrl.getAuthStatus : ', error);
+    })
 }
