@@ -1,6 +1,6 @@
 const morpionManager = require('./gameManagers/morpionManager');
 const { User } = require('../models');
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 
 exports.morpionGameHandler = async (socket, host) => {
     console.log(`${socket.userName} accepte l'invitation de ${host}`);
@@ -28,28 +28,18 @@ exports.morpionGameHandler = async (socket, host) => {
     //////
     // remove invitations from db
     //////
+    
     //remove host from guest's "invitedBy" field
-    User.findOne({where: {pseudo: socket.userName}}).then(user => {
-        console.log('guest invited by : ', user.invitedBy);
-        let invitedByArray = JSON.parse(user.invitedBy);
-        let updatedInvites = invitedByArray.filter(elt => elt !== host);
-        console.log(updatedInvites);
-        User.update({invitedBy: JSON.stringify(updatedInvites)}, {where: {pseudo: socket.userName}});
-    })
+    User.update({invitedBy: Sequelize.fn('array_remove', Sequelize.col('invitedBy'), host)}, {where: {pseudo: socket.userName}})
+
     //remove all invites sent by guest in guest DB entry
-    User.update({invited: '[]'}, {where: {pseudo: socket.userName}});
+    User.update({invited: []}, {where: {pseudo: socket.userName}});
     //remove all invites sent by host in host DB entry
-    User.update({invited: '[]'}, {where: {pseudo: host}});
+    User.update({invited: []}, {where: {pseudo: host}});
+
     //remove all invites sent by host and guest from other users' DB entries
-    const usersInvitedBy = await User.findAll({where: {[Op.or]: [
-        {invitedBy: {[Op.substring]: socket.userName}},
-        {invitedBy: {[Op.substring]: host}}
-    ]}});
-    for(let user of usersInvitedBy) {
-        let invitedByArray = JSON.parse(user.invitedBy);
-        invitedByArray = invitedByArray.filter(elt => elt !== host && elt !== socket.userName);
-        User.update({invitedBy: JSON.stringify(invitedByArray)}, {where: {id: user.id}});
-    }
+    User.update({invitedBy: Sequelize.fn('array_remove', Sequelize.col('invitedBy'), socket.userName)}, {where: { invitedBy: {[Op.contains]: [socket.userName]}}});
+    User.update({invitedBy: Sequelize.fn('array_remove', Sequelize.col('invitedBy'), host)}, {where: { invitedBy: {[Op.contains]: [host]}}});
     
     //////////////
     //

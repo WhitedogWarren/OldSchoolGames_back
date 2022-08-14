@@ -1,23 +1,23 @@
 {
   "development": {
-    "username": "Whitedog44",
+    "username": "postgres",
     "password": "Vegu+1459",
-    "database": "old_school_games",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
+    "database": "oldschoolgames",
+    "host": "localhost",
+    "dialect": "postgres"
   },
   "test": {
-    "username": "Whitedog44",
+    "username": "postgres",
     "password": "Vegu+1459",
-    "database": "old_school_games",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
+    "database": "oldschoolgames",
+    "host": "localhost",
+    "dialect": "postgres"
   },
   "production": {
-    "username": "Whitedog44",
+    "username": "postgres",
     "password": "Vegu+1459",
-    "database": "old_school_games",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
+    "database": "oldschoolgames",
+    "host": "localhost",
+    "dialect": "postgres"
   }
 }

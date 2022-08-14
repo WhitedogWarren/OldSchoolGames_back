@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const path = require('path');
-const mysql = require('mysql2');
+//const mysql = require('mysql2');
 
 require('dotenv').config();
 
@@ -15,16 +15,6 @@ app.use((req, res, next) => {
 
 //Permet la récupération des données POST ( req.body )
 app.use(express.json());
-
-const dbConnexion = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
-})
-
-dbConnexion.connect();
-
 
 //création des routes
 app.use('/images', express.static(path.join(__dirname, 'images')));

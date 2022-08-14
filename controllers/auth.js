@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const {parse: pgParse} = require('postgres-array');
 
 const { User } = require('../models');
 
@@ -42,6 +43,9 @@ exports.signup = (req, res) => {
     if(emptyFields || invalidFields) {
         return res.status(401).json({message: 'Formulaire invalide', user: null, token: null, emptyFields, invalidFields});
     }
+    //////
+    // TODO : unique email validator
+    //////
     
     bcrypt.hash(req.body.password, 10)
     .then(hash => {
@@ -49,9 +53,14 @@ exports.signup = (req, res) => {
             pseudo: req.body.pseudo,
             email: req.body.email,
             password: hash,
+            invited: [],
+            invitedBy: []
         })
         .then((user) => {
-            console.log('user créé\n', user);
+            //console.log('user créé\n', typeof pgParse(user.dataValues.invited));
+            // let testArray = pgParse(user.dataValues.invited);
+            // testArray.push('test');
+            // console.log(testArray);
             delete user.dataValues.password;
             delete user.dataValues.email;
             const token = jwt.sign(

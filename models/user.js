@@ -15,14 +15,10 @@ const User = sequelize.define('User', {
     allowNull: false
   },
   invited: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: '[]'
+    type: DataTypes.ARRAY(DataTypes.STRING),
   },
   invitedBy: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: '[]'
+    type: DataTypes.ARRAY(DataTypes.STRING),
   }
 })
 

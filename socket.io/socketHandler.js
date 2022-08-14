@@ -1,6 +1,7 @@
 const { User } = require('../models');
-const { Op } = require("sequelize");
+const { Op, Sequelize } = require("sequelize");
 const jwt = require('jsonwebtoken');
+const {parse: pgParse} = require('postgres-array');
 const morpionGameManager = require('./morpionGameHandler');
 
 exports.connectionHandler = (socket) =>  {
@@ -35,44 +36,18 @@ exports.connectionHandler = (socket) =>  {
     socket.on('disconnect', async reason => {
         if(socket.userName) {
             //unset all invitations of user
-            User.update({invited: '[]', invitedBy: '[]'}, {where: {pseudo: socket.userName}});
+            User.update({invited: [], invitedBy: []}, {where: {pseudo: socket.userName}});
             
             const goneUser = await User.findOne({where: {pseudo: socket.userName}});
-            //unset all invitations sent by user on other users
-            const usersInvitedBy = await User.findAll({attributes: ['id', 'pseudo', 'invited', 'invitedBy'] , where: {invitedBy: {[Op.substring]: goneUser.pseudo}}});
-            for(let user of usersInvitedBy) {
-                let invitedByArray = JSON.parse(user.invitedBy);
-                invitedByArray = invitedByArray.filter(elt => elt !== goneUser.pseudo);
-                User.update({invitedBy: JSON.stringify(invitedByArray)}, {where: {id: user.id}})
-                .then(() => {
-                    User.findOne({attributes: ['invited', 'invitedBy'], where: {id: user.id}})
-                    .then((userInvites) => {
-                        let parsedValues = {
-                            invited: JSON.parse(userInvites.dataValues.invited),
-                            invitedBy: JSON.parse(userInvites.dataValues.invitedBy)
-                        }
-                        socket.nsp.to(user.pseudo).emit('invitesList', JSON.stringify(parsedValues));
-                    })
-                });
-            }
             
-            //unset all invitations received by user from other users
-            const usersInvited = await User.findAll({attributes: ['id', 'pseudo', 'invited', 'invitedBy'] , where: {invited: {[Op.substring]: goneUser.pseudo}}});
-            for(let user of usersInvited) {
-                let invitedArray = JSON.parse(user.invited);
-                invitedArray = invitedArray.filter(elt => elt !== goneUser.pseudo);
-                User.update({invited: JSON.stringify(invitedArray)}, {where: {id:user.id}})
-                .then(() => {
-                    User.findOne({attributes: ['invited', 'invitedBy'], where: {id: user.id}})
-                    .then((userInvites) => {
-                        let parsedValues = {
-                            invited: JSON.parse(userInvites.dataValues.invited),
-                            invitedBy: JSON.parse(userInvites.dataValues.invitedBy)
-                        }
-                        socket.nsp.to(user.pseudo).emit('invitesList', JSON.stringify(parsedValues));
-                    })
-                });
-            }
+            const usersInvitedBy = await User.findAll({attributes: ['pseudo', 'invited', 'invitedBy'] , where: {invitedBy: {[Op.contains]: [goneUser.pseudo]}}});
+            
+            const usersInvited = await User.findAll({attributes: ['pseudo', 'invited', 'invitedBy'] , where: {invited: {[Op.contains]: [goneUser.pseudo]}}});
+            
+            //update "invited" and "invitedBy" fields of other users            
+            await User.update({invitedBy: Sequelize.fn('array_remove', Sequelize.col('invitedBy'), goneUser.pseudo)}, {where: {invitedBy: {[Op.contains]: [goneUser.pseudo]}}});
+            await User.update({invited: Sequelize.fn('array_remove', Sequelize.col('invited'), goneUser.pseudo)}, {where: {invited: {[Op.contains]: [goneUser.pseudo]}}});
+
             //broadcast disconnection
             let data = {
                 pseudo: socket.userName,
@@ -83,10 +58,30 @@ exports.connectionHandler = (socket) =>  {
             socket.nsp.sockets.forEach((value, key, map) => {
                 data.userList.push(value.userName);
             })
+            console.log('userList : ', data.userList);
             socket.broadcast.emit('userLeft', JSON.stringify(data));
+
+            
+            // send invites lists to updated users.
+            
+            for(let user of usersInvitedBy) {
+                socket.nsp.to(user.dataValues.pseudo).emit('invitesList', {
+                    invited: user.dataValues.invited.filter(elt => elt !== goneUser.pseudo),
+                    invitedBy: user.dataValues.invitedBy.filter(elt => elt !== goneUser.pseudo)
+                });
+            }
+            for(let user of usersInvited) {
+                socket.nsp.to(user.dataValues.pseudo).emit('invitesList', {
+                    invited: user.dataValues.invited.filter(elt => elt !== goneUser.pseudo),
+                    invitedBy: user.dataValues.invitedBy.filter(elt => elt !== goneUser.pseudo)
+                })
+            }
         }
     })
-    
+
+    //////
+    // TODO : adapter à la nouvelle BDD
+    //////
     socket.on('invite', async (user) => {
         console.log(`${socket.userName} a invité ${user}`);
         socket.nsp.to(user).emit('invitedBy', socket.userName);
@@ -96,34 +91,29 @@ exports.connectionHandler = (socket) =>  {
         
         // emit invites lists to both host and guest
         const hostPromise = new Promise((resolve, reject) => { // add invitation in inviter
-            let invitedArray = JSON.parse(inviter.invited);
+            let invitedArray = pgParse(inviter.invited);
             if(!invitedArray.includes(invited.pseudo)) {
                 invitedArray.push(invited.pseudo);
             }
-            User.update({invited: JSON.stringify(invitedArray)}, {where: {id: inviter.id}})
+            User.update({invited: invitedArray}, {where: {id: inviter.id}})
             .then(() => {
                 User.findOne({attributes: ['invited', 'invitedBy'], where: {id: inviter.id}})
                 .then(user => resolve(user.dataValues))
             })
         })
         const guestPromise = new Promise((resolve, reject) => { // add invitation in invited
-            let invitedByArray = JSON.parse(invited.invitedBy);
+            let invitedByArray = pgParse(invited.invitedBy);
             if(!invitedByArray.includes(inviter.pseudo)) {
                 invitedByArray.push(inviter.pseudo);
             }
-            User.update({invitedBy: JSON.stringify(invitedByArray)}, {where: {id: invited.id}})
+            User.update({invitedBy: invitedByArray}, {where: {id: invited.id}})
             .then(() => {
                 User.findOne({attributes: ['invited', 'invitedBy'], where: {id: invited.id}})
                 .then(user => resolve(user.dataValues))
             });
         })
         Promise.all([hostPromise, guestPromise]).then((values) => {
-            //parse values to get arrays
-            values[0].invited = JSON.parse(values[0].invited);
-            values[0].invitedBy = JSON.parse(values[0].invitedBy);
-            values[1].invited = JSON.parse(values[1].invited);
-            values[1].invitedBy = JSON.parse(values[1].invitedBy);
-            //send invites lists to both host and guest
+            console.log(values);
             socket.nsp.to(socket.userName).emit('invitesList', JSON.stringify(values[0]));
             socket.nsp.to(user).emit('invitesList', JSON.stringify(values[1]));
         })
@@ -131,8 +121,6 @@ exports.connectionHandler = (socket) =>  {
 
     socket.on('setGame', host => {
         console.log('setGame : ', `${host} invite ${socket.userName}`);
-        
         morpionGameManager.morpionGameHandler(socket, host);
-        
     })
 }
