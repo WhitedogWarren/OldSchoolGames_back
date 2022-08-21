@@ -1,6 +1,7 @@
 const http = require('http');
 const app = require('./app');
 const server = http.createServer(app);
+const jwt = require('jsonwebtoken');
 
 const io = require('socket.io')(server);
 const ioUtils = require('./socket.io/socketHandler');
@@ -48,4 +49,21 @@ server.on('listening', () => {
 
 server.listen(port);
 
-io.on('connection', ioUtils.connectionHandler);
+io.use((socket, next) => {
+  //jwt authentication
+  if(socket.handshake.query && socket.handshake.query.token) {
+    //console.log('token : ', socket.handshake.query.token);
+    jwt.verify(socket.handshake.query.token, process.env.TOKEN_SECRET, (err, decoded) => {
+      if(err) {
+        return next(new Error('Authentication failed'));
+      }
+      console.log('decoded : ', decoded);
+      socket.decoded = decoded;
+      next();
+    });
+  }
+  else {
+    next(new Error('Authentication error'));
+  }
+}) 
+.on('connection', ioUtils.connectionHandler);
